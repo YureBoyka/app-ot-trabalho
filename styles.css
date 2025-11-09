@@ -42,11 +42,11 @@ header h1 {
 }
 
 .brand-logo {
-    width: 83px; /* +30% sobre 64px */
-    height: 83px; /* mantém proporção */
+    height: 50px; /* altura fixa proporcional */
+    width: auto; /* largura automática mantém proporção */
+    max-width: 200px; /* limita a largura máxima */
     flex-shrink: 0;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    object-fit: contain; /* mantém proporção sem distorcer */
 }
 
 .brand h1 {

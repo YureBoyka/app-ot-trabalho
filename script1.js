@@ -1287,7 +1287,17 @@ function trocarCamera() {
 function fecharScanner() {
     const modal = document.getElementById('scannerModal');
     scannerAtivo = false;
-    cameraAtualIndex = 0; // resetar para câmera padrão
+    
+    // Resetar para câmera traseira na próxima vez
+    // Procurar índice da câmera traseira
+    if (camerasDisponiveis.length > 1) {
+        const backCameraIndex = camerasDisponiveis.findIndex(device => 
+            /back|rear|environment/i.test(device.label)
+        );
+        cameraAtualIndex = backCameraIndex !== -1 ? backCameraIndex : 0;
+    } else {
+        cameraAtualIndex = 0;
+    }
     
     // Parar scanner ZXing
     if (codeReader) {
