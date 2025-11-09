@@ -82,10 +82,21 @@
         <h1>🎨 Gerador de Logo - App OT Telecom</h1>
         <p>Clique nos botões para gerar e baixar os ícones personalizados</p>
 
+        <div class="uploader" style="background:#f8f9ff; border:1px solid #e0e6ff; padding:16px; border-radius:12px; margin-bottom:20px;">
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center;">
+                <input id="uploadInput" type="file" accept="image/*" style="padding:8px; border:1px solid #d0d0ff; border-radius:8px; background:#fff;" />
+                <label style="display:flex; align-items:center; gap:6px; font-size:14px; color:#555;">
+                    <input id="iconGradient" type="checkbox" /> Fundo com gradiente nos ícones
+                </label>
+                <button type="button" onclick="aplicarImagemEnviada()">Aplicar imagem</button>
+            </div>
+            <small style="display:block; margin-top:8px; color:#666;">Dica: use imagens quadradas (ex.: 1024x1024) para melhor resultado nos ícones. Para o header (200x50), a imagem será ajustada proporcionalmente.</small>
+        </div>
+
         <div class="preview-grid">
             <div class="preview-item">
-                <h3>Logo Header (200x50px)</h3>
-                <canvas id="canvasLogo" width="200" height="50"></canvas>
+                <h3>Logo Header (120x120 - mais visível)</h3>
+                <canvas id="canvasLogo" width="120" height="120"></canvas>
                 <button onclick="downloadLogo()">⬇️ Baixar logo.png</button>
             </div>
 
@@ -100,6 +111,8 @@
                 <canvas id="canvas512" width="512" height="512"></canvas>
                 <button onclick="download512()">⬇️ Baixar icon-512.png</button>
             </div>
+
+            
         </div>
 
         <div class="info">
@@ -119,35 +132,26 @@
     </div>
 
     <script>
-        // Desenhar logo para header (200x50px)
+        // Desenhar logo padrão (70x70) - placeholder simples
         function drawLogo() {
             const canvas = document.getElementById('canvasLogo');
             const ctx = canvas.getContext('2d');
-            
+            const W = canvas.width, H = canvas.height; // 120x120
             // Fundo transparente
-            ctx.clearRect(0, 0, 200, 50);
-            
-            // Centro da logo
-            const centerX = 100;
-            const centerY = 25;
-            
-            // Gradiente para o texto OT
-            const gradient = ctx.createLinearGradient(0, 0, 200, 50);
+            ctx.clearRect(0, 0, W, H);
+            // Placeholder discreto caso não envie imagem
+            const gradient = ctx.createLinearGradient(0, 0, W, H);
             gradient.addColorStop(0, '#667eea');
             gradient.addColorStop(1, '#764ba2');
-            
-            // Texto "OT" grande em cima
             ctx.fillStyle = gradient;
-            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.beginPath();
+            ctx.arc(W/2, H/2, Math.min(W,H)/2 - 12, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 38px Arial, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('OT', centerX, 18);
-            
-            // Texto "TELECOM" menor embaixo
-            ctx.fillStyle = '#764ba2';
-            ctx.font = '600 10px Arial, sans-serif';
-            ctx.letterSpacing = '2px';
-            ctx.fillText('T E L E C O M', centerX, 38);
+            ctx.fillText('OT', W/2, H/2);
         }
 
         // Desenhar ícone 192x192px
@@ -239,6 +243,110 @@
             link.href = canvas.toDataURL('image/png');
             link.click();
         }
+
+        // ===== Upload de Imagem Personalizada =====
+        let uploadedImage = null;
+
+        document.getElementById('uploadInput').addEventListener('change', function(e){
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const img = new Image();
+            img.onload = () => {
+                uploadedImage = img;
+                aplicarImagemEnviada();
+            };
+            img.src = URL.createObjectURL(file);
+        });
+
+        document.getElementById('iconGradient').addEventListener('change', function(){
+            if (uploadedImage) aplicarImagemEnviada();
+        });
+
+        function aplicarImagemEnviada(){
+            if (!uploadedImage) return;
+            drawUploadedLogo(uploadedImage);
+            drawUploaded192(uploadedImage);
+            drawUploaded512(uploadedImage);
+        }
+
+        function drawUploadedLogo(img){
+            const canvas = document.getElementById('canvasLogo');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height; // 120x120
+            ctx.clearRect(0,0,W,H);
+            // Sem margens: ocupar o máximo mantendo proporção
+            const scale = Math.min(W / img.width, H / img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const dx = (W - dw) / 2;
+            const dy = (H - dh) / 2;
+            ctx.drawImage(img, dx, dy, dw, dh);
+        }
+
+        function drawUploaded192(img){
+            const canvas = document.getElementById('canvas192');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+            // Fundo
+            if (document.getElementById('iconGradient').checked){
+                const gradient = ctx.createLinearGradient(0, 0, W, H);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, W, H);
+            } else {
+                ctx.clearRect(0,0,W,H);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0,0,W,H);
+            }
+            // Clip circular e desenhar imagem central
+            const radius = 72; // levemente menor que 96
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(W/2, H/2, radius, 0, Math.PI*2);
+            ctx.clip();
+            const avail = radius*2 - 8; // padding interno
+            const scale = Math.min(avail/img.width, avail/img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const dx = (W - dw)/2;
+            const dy = (H - dh)/2;
+            ctx.drawImage(img, dx, dy, dw, dh);
+            ctx.restore();
+        }
+
+        function drawUploaded512(img){
+            const canvas = document.getElementById('canvas512');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+            // Fundo
+            if (document.getElementById('iconGradient').checked){
+                const gradient = ctx.createLinearGradient(0, 0, W, H);
+                gradient.addColorStop(0, '#667eea');
+                gradient.addColorStop(1, '#764ba2');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, W, H);
+            } else {
+                ctx.clearRect(0,0,W,H);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0,0,W,H);
+            }
+            // Clip circular e desenhar imagem central
+            const radius = 210; // levemente menor que 256
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(W/2, H/2, radius, 0, Math.PI*2);
+            ctx.clip();
+            const avail = radius*2 - 12; // padding interno
+            const scale = Math.min(avail/img.width, avail/img.height);
+            const dw = img.width * scale;
+            const dh = img.height * scale;
+            const dx = (W - dw)/2;
+            const dy = (H - dh)/2;
+            ctx.drawImage(img, dx, dy, dw, dh);
+            ctx.restore();
+        }
+
 
         // Desenhar todos os ícones ao carregar
         window.addEventListener('load', function() {
