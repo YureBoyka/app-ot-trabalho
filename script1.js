@@ -1073,6 +1073,7 @@ function gerarPDFLogistica() {
 
 let codeReader = null;
 let videoStream = null;
+let scannerAtivo = false;
 
 function abrirScanner() {
     const modal = document.getElementById('scannerModal');
@@ -1080,95 +1081,88 @@ function abrirScanner() {
     const resultado = document.getElementById('resultado');
     
     modal.classList.add('active');
-    resultado.textContent = '';
+    resultado.textContent = 'Iniciando câmera...';
+    resultado.style.color = '#333';
+    scannerAtivo = true;
     
     // Inicializar o scanner ZXing
     if (!codeReader) {
         codeReader = new ZXing.BrowserMultiFormatReader();
     }
     
-    // Configurar constraints para câmera traseira (melhor para escanear)
-    const constraints = {
-        video: {
-            facingMode: { ideal: 'environment' }, // Câmera traseira
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-        }
-    };
-    
-    // Iniciar câmera
-    navigator.mediaDevices.getUserMedia(constraints)
-        .then(stream => {
-            videoStream = stream;
-            video.srcObject = stream;
-            video.play();
+    // Usar método direto do ZXing para mobile (mais confiável)
+    codeReader.listVideoInputDevices()
+        .then(videoInputDevices => {
+            console.log('Câmeras encontradas:', videoInputDevices.length);
             
-            // Começar a escanear
-            escanearContinuamente();
+            // Selecionar câmera traseira preferencialmente
+            let selectedDeviceId;
+            if (videoInputDevices.length > 1) {
+                // Procurar câmera traseira
+                const backCamera = videoInputDevices.find(device => 
+                    /back|rear|environment/i.test(device.label)
+                );
+                selectedDeviceId = backCamera ? backCamera.deviceId : videoInputDevices[0].deviceId;
+            } else if (videoInputDevices.length === 1) {
+                selectedDeviceId = videoInputDevices[0].deviceId;
+            } else {
+                throw new Error('Nenhuma câmera encontrada');
+            }
+            
+            resultado.textContent = 'Aponte para o código de barras...';
+            
+            // Iniciar decodificação contínua
+            codeReader.decodeFromVideoDevice(selectedDeviceId, 'video', (result, err) => {
+                if (result && scannerAtivo) {
+                    // Código detectado!
+                    const codigoDetectado = result.text;
+                    console.log('Código detectado:', codigoDetectado);
+                    
+                    atualizarMACScanner(codigoDetectado);
+                    resultado.textContent = `✅ Código: ${codigoDetectado}`;
+                    resultado.style.color = '#27ae60';
+                    
+                    // Vibrar se disponível (feedback tátil)
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200);
+                    }
+                    
+                    // Fechar após 1.5 segundos
+                    setTimeout(() => {
+                        fecharScanner();
+                    }, 1500);
+                }
+                
+                if (err && !(err instanceof ZXing.NotFoundException)) {
+                    console.warn('Erro no scanner:', err);
+                }
+            });
         })
         .catch(err => {
             console.error('Erro ao acessar câmera:', err);
             resultado.textContent = '❌ Erro ao acessar câmera. Verifique as permissões.';
             resultado.style.color = '#e74c3c';
+            scannerAtivo = false;
         });
-}
-
-function escanearContinuamente() {
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const resultado = document.getElementById('resultado');
-    
-    function scan() {
-        if (!videoStream) return;
-        
-        // Configurar canvas com tamanho do vídeo
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        
-        // Desenhar frame do vídeo no canvas
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        // Tentar decodificar
-        codeReader.decodeFromCanvas(canvas)
-            .then(result => {
-                if (result) {
-                    // Código detectado!
-                    const codigoDetectado = result.text;
-                    atualizarMACScanner(codigoDetectado);
-                    resultado.textContent = `✅ Código detectado: ${codigoDetectado}`;
-                    resultado.style.color = '#27ae60';
-                    
-                    // Fechar scanner após 2 segundos
-                    setTimeout(() => {
-                        fecharScanner();
-                    }, 2000);
-                } else {
-                    // Continuar escaneando
-                    requestAnimationFrame(scan);
-                }
-            })
-            .catch(err => {
-                // Continuar escaneando mesmo com erro
-                requestAnimationFrame(scan);
-            });
-    }
-    
-    scan();
 }
 
 function fecharScanner() {
     const modal = document.getElementById('scannerModal');
-    const video = document.getElementById('video');
+    scannerAtivo = false;
     
-    // Parar stream de vídeo
-    if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
+    // Parar scanner ZXing
+    if (codeReader) {
+        codeReader.reset();
     }
     
-    video.srcObject = null;
     modal.classList.remove('active');
+}
+
+// Função para fechar scanner ao clicar fora do conteúdo
+function fecharScannerSeClicarFora(event) {
+    if (event.target.id === 'scannerModal') {
+        fecharScanner();
+    }
 }
 
 // ==================== AJUDA (MODAL) ====================

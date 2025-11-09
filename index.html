@@ -20,7 +20,7 @@
                 <img src="logo.png" alt="Logo" class="brand-logo">
                 <h1>Controle de Ordens de Trabalho</h1>
                 <button id="btnInstallApp" type="button" class="btn-secondary" style="margin-left:auto; display:none;" onclick="instalarApp()">⬇️ Instalar</button>
-                <button type="button" class="btn-secondary" style="margin-left:10px" onclick="abrirAjuda()">❓ Ajuda</button>
+                <button type="button" class="btn-secondary" style="margin-left:10px; font-size:14.4px; padding:10.8px 27px;" onclick="abrirAjuda()">❓ Ajuda</button>
             </div>
             <div class="resumo">
                 <div class="card">
@@ -291,15 +291,15 @@
     </div>
 
     <!-- Modal Scanner -->
-    <div id="scannerModal" class="scanner-modal">
-        <div class="scanner-content">
-            <h3>📷 Escanear Código de Barras</h3>
+    <div id="scannerModal" class="scanner-modal" onclick="fecharScannerSeClicarFora(event)">
+        <div class="scanner-content" onclick="event.stopPropagation()">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="margin:0;">📷 Escanear Código</h3>
+                <button type="button" class="btn-close-scanner" onclick="fecharScanner()" style="margin:0;">✕ Fechar</button>
+            </div>
             <video id="video" playsinline></video>
             <canvas id="canvas" style="display: none;"></canvas>
-            <div id="resultado" style="margin-bottom: 15px; font-weight: bold; color: #27ae60;"></div>
-            <div class="scanner-buttons">
-                <button type="button" class="btn-close-scanner" onclick="fecharScanner()">Fechar</button>
-            </div>
+            <div id="resultado" style="margin-top: 10px; font-weight: bold; color: #27ae60; text-align:center;"></div>
         </div>
     </div>
 
